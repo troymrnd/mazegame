@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Game</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #ffc0cb;
+            margin: 0;
+            overflow: hidden;
+        }
+        .game-container {
+            position: relative;
+            width: 400px; 
+            height: 400px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+            border: 2px solid #ffffff;
+            padding: 0;
+            box-sizing: content-box;
+        }
+        #maze {
+            display: grid;
+            width: 100%;
+            height: 100%;
+            background-color: #ffe0e6;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        .maze-cell {
+            width: 50px;
+            height: 50px;
+            box-sizing: border-box;
+        }
+        .maze-wall {
+            background-color: #87ceeb;
+            width: 100%;
+            height: 100%;
+        }
+        /* Character placement adjustment for perfect centering */
+        .character {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            font-size: 35px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            z-index: 10;
+            transition: transform 0.1s ease-out;
+            line-height: 1;
+        }
+
+        /* Controls Styling */
+        .controls-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .horizontal-controls {
+            display: flex;
+            gap: 10px;
+        }
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px #aaa;
+            transition: all 0.1s;
+        }
+        .control-btn:active {
+            box-shadow: 0 0 #aaa;
+            transform: translateY(4px);
+        }
+        
+        /* Popup General Styling */
+        .popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none; 
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+        
+        /* Win Popup Content Styling (Macoy Dialogue Box) */
+        #win-popup .popup-content {
+            background-color: #222;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 350px;
+            max-width: 90%;
+        }
+        .dialogue-box {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            width: 100%;
+            background-color: #333;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .macoy-image-container {
+            width: 80px;
+            height: 80px;
+            margin-right: 15px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            overflow: hidden; 
+        }
+
+        .macoy-profile-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; 
+        }
+        
+        .macoy-text {
+            text-align: left;
+            flex-grow: 1;
+        }
+        .macoy-text h3 {
+            margin: 0 0 5px 0;
+            color: #FF69B4;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .macoy-name-icon {
+            width: 20px; 
+            height: 20px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .macoy-text p {
+            margin: 0;
+            font-size: 1.1em;
+            font-style: italic;
+        }
+
+        /* Gallery Modal Styles - MODIFIED FOR BETTER LAYOUT AND "CONGRATULATIONS" TITLE */
+        #gallery-modal .popup-content {
+            background-color: white;
+            color: #333;
+            padding: 30px; 
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 450px; /* Slightly wider for better image arrangement */
+            border: none; 
+        }
+        
+        /* Styling for the GIF at the top of the gallery */
+        .gallery-gif-header {
+            width: 100px; /* Adjust size as needed */
+            height: auto;
+            margin: 0 auto 20px auto; /* Center and space below GIF */
+            display: block; /* Ensure it's displayed */
+        }
+
+        /* Styling for the new text title */
+        #gallery-modal h2 {
+            font-size: 2em;
+            color: #FF69B4; /* Pink color for congratulations */
+            margin-bottom: 25px; /* More space below title */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* Styling for the image gallery container */
+        #gallery {
+            display: grid; /* Use CSS Grid for a better layout */
+            grid-template-columns: repeat(2, 1fr); /* 2 columns, equal width */
+            gap: 15px; /* Space between images */
+            justify-items: center; /* Center items in their grid cells */
+            margin-bottom: 25px; /* Space below gallery */
+        }
+
+        /* Styling for individual images within the gallery */
+        #gallery img {
+            width: 100%; /* Make image fill its grid cell */
+            max-width: 180px; /* Max width to prevent images from becoming too large */
+            height: 120px; /* Fixed height for consistent look */
+            object-fit: cover; /* Crop images to fit, maintaining aspect ratio */
+            border-radius: 10px; /* Slightly more rounded corners */
+            border: 3px solid #ffb6c1; /* Pink border */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            transition: transform 0.2s ease-in-out; /* Smooth hover effect */
+        }
+
+        #gallery img:hover {
+            transform: scale(1.05); /* Slightly enlarge on hover */
+        }
+
+
+        /* Button Styling for Play Again and Show Gallery (Standard Blue) */
+        #play-again-btn, #show-gallery-btn {
+            padding: 10px 20px;
+            margin-top: 15px;
+            background-color: #87ceeb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 4px #6cb7d9;
+            transition: all 0.1s;
+        }
+        #play-again-btn:active, #show-gallery-btn:active {
+            box-shadow: 0 0 #6cb7d9;
+            transform: translateY(4px);
+        }
+
+        /* Button Styling for Close Gallery (Pink button for consistency) */
+        #close-gallery-btn {
+            padding: 12px 25px; /* Larger padding for the button */
+            margin-top: 20px;
+            background-color: #ff69b4; /* Pink button */
+            color: white;
+            border: none;
+            border-radius: 25px; /* More rounded button */
+            cursor: pointer;
+            font-size: 18px; /* Larger font size */
+            font-weight: bold; /* Bold text */
+            box-shadow: 0 4px #e05e9e; /* Pink button shadow */
+            transition: all 0.1s;
+        }
+        #close-gallery-btn:active {
+            box-shadow: 0 0 #e05e9e;
+            transform: translateY(4px);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div id="maze">
+            <div id="player" class="character">🧍‍♀️</div>
+            <div id="goal" class="character"></div>
+        </div>
+    </div>
+
+    <div class="controls-container">
+        <button id="up-btn" class="control-btn">↑</button>
+        <div class="horizontal-controls">
+            <button id="left-btn" class="control-btn">←</button>
+            <button id="down-btn" class="control-btn">↓</button>
+            <button id="right-btn" class="control-btn">→</button>
+        </div>
+    </div>
+
+    <div id="win-popup" class="popup">
+        <div class="popup-content">
+            <h2>✨ Mission Complete! ✨</h2>
+            
+            <div class="dialogue-box">
+                <div class="macoy-image-container">
+                    <img src="4.jpg" alt="Macoy" class="macoy-profile-img">
+                </div>
+                <div class="macoy-text">
+                    <h3>
+                        <img src="4.jpg" alt="Icon" class="macoy-name-icon"> Troy <span style="color:red;">❤️</span>
+                    </h3>
+                    <p>"Like what I said, here is your kiss 😘"</p>
+                </div>
+            </div>
+            
+            <button id="play-again-btn">Play Again</button>
+            <button id="show-gallery-btn">You Won, Click MEEE!!</button>
+        </div>
+    </div>
+
+    <div id="gallery-modal" class="popup">
+        <div class="popup-content">
+            <img src="bear.gif" alt="Cute Bears" class="gallery-gif-header">
+            <h2>Congratulations! <span style="color:red;">❤️</span></h2>
+            <div id="gallery">
+                <img src="1.jpeg" alt="Image 1">
+                <img src="2.jpeg" alt="Image 2">
+                <img src="3.jpeg" alt="Image 3">
+                <img src="4.jpg" alt="Image 4">
+            </div>
+            <button id="close-gallery-btn">Close</button>
+        </div>
+    </div>
+    <script>
+        // --- Game Configuration (Using 8x8 Grid) ---
+        const CELL_SIZE = 50; 
+        const GRID_SIZE = 8; 
+        const WALL = 1;
+        const CENTER_OFFSET = 0; 
+
+        // Player starts at (row 1, col 1)
+        let playerPos = { r: 1, c: 1 }; 
+        // Goal is at (row 6, col 6)
+        const goalPos = { r: 6, c: 6 }; 
+
+        const mazeMap = [
+            [1,1,1,1,1,1,1,1],
+            [1,0,0,0,1,0,0,1],
+            [1,1,1,0,1,0,1,1],
+            [1,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1],
+            [1,0,0,0,0,1,0,0], 
+            [1,1,1,1,0,0,0,1],
+            [1,1,1,1,1,1,1,1]
+        ];
+        
+        // --- DOM Elements ---
+        const mazeEl = document.getElementById('maze');
+        const playerEl = document.getElementById('player');
+        const goalEl = document.getElementById('goal');
+        const popupEl = document.getElementById('win-popup');
+        const playAgainBtn = document.getElementById('play-again-btn');
+        const showGalleryBtn = document.getElementById('show-gallery-btn');
+        const galleryModal = document.getElementById('gallery-modal');
+        const closeGalleryBtn = document.getElementById('close-gallery-btn');
+
+        // --- Core Functions ---
+        function setupGame() {
+            mazeEl.style.gridTemplateColumns = `repeat(${GRID_SIZE}, ${CELL_SIZE}px)`;
+            mazeEl.style.gridTemplateRows = `repeat(${GRID_SIZE}, ${CELL_SIZE}px)`;
+            
+            renderMaze();
+            
+            updateCharacterPosition(playerEl, playerPos);
+            goalEl.textContent = '🧍‍♂️'; 
+            updateCharacterPosition(goalEl, goalPos);
+            
+            popupEl.style.display = 'none';
+            galleryModal.style.display = 'none'; 
+        }
+
+        function renderMaze() {
+            mazeEl.querySelectorAll('.maze-cell').forEach(cell => cell.remove());
+            
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'maze-cell';
+                    if (mazeMap[r][c] === WALL) {
+                        const wall = document.createElement('div');
+                        wall.className = 'maze-wall';
+                        cell.appendChild(wall);
+                    }
+                    mazeEl.appendChild(cell);
+                }
+            }
+        }
+
+        function updateCharacterPosition(el, pos) {
+            const x = pos.c * CELL_SIZE + CENTER_OFFSET;
+            const y = pos.r * CELL_SIZE + CENTER_OFFSET;
+            el.style.transform = `translate(${x}px, ${y}px)`;
+        }
+
+        function movePlayer(dr, dc) {
+            const nr = playerPos.r + dr;
+            const nc = playerPos.c + dc;
+            
+            if (nr < 0 || nr >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) return;
+            
+            if (mazeMap[nr][nc] === WALL) return;
+            
+            playerPos = { r: nr, c: nc };
+            updateCharacterPosition(playerEl, playerPos);
+            
+            if (nr === goalPos.r && nc === goalPos.c) {
+                popupEl.style.display = 'flex';
+            }
+        }
+        
+        // --- Event Listeners ---
+        document.addEventListener("keydown", e => {
+            if (popupEl.style.display === 'flex' || galleryModal.style.display === 'flex') return;
+            if (e.key === "ArrowUp") movePlayer(-1, 0);
+            if (e.key === "ArrowDown") movePlayer(1, 0);
+            if (e.key === "ArrowLeft") movePlayer(0, -1);
+            if (e.key === "ArrowRight") movePlayer(0, 1);
+        });
+
+        document.querySelectorAll(".control-btn").forEach(btn => {
+            btn.onclick = () => {
+                if (popupEl.style.display === 'flex' || galleryModal.style.display === 'flex') return;
+                if (btn.id === "up-btn") movePlayer(-1,0);
+                if (btn.id === "down-btn") movePlayer(1,0);
+                if (btn.id === "left-btn") movePlayer(0,-1);
+                if (btn.id === "right-btn") movePlayer(0,1);
+            };
+        });
+
+        playAgainBtn.onclick = () => {
+            playerPos = { r: 1, c: 1 };
+            updateCharacterPosition(playerEl, playerPos);
+            popupEl.style.display = 'none';
+        };
+
+        showGalleryBtn.onclick = () => {
+            galleryModal.style.display = 'flex';
+        };
+
+        closeGalleryBtn.onclick = () => {
+            galleryModal.style.display = 'none';
+        };
+
+        galleryModal.onclick = (e) => {
+            if (e.target === galleryModal) galleryModal.style.display = 'none';
+        };
+
+        setupGame();
+    </script>
+</body>
+</html>
